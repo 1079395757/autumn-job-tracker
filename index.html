@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1f5c4a">
+  <title>秋招投递簿</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div>
+        <p class="eyebrow">2027 届秋招</p>
+        <h1>秋招投递簿</h1>
+      </div>
+      <div class="header-actions">
+        <span class="cloud-status" id="cloudStatus">尚未登录</span>
+        <button class="button button-quiet" id="importButton" type="button">导入备份</button>
+        <button class="button button-quiet" id="exportButton" type="button">导出备份</button>
+        <button class="button button-quiet" id="loginButton" type="button">登录</button>
+        <div class="account-menu" id="accountMenu" hidden>
+          <span id="userEmail"></span>
+          <button class="button button-quiet" id="logoutButton" type="button">退出</button>
+        </div>
+        <button class="button button-primary" id="addButton" type="button"><span aria-hidden="true">＋</span> 新增职位</button>
+        <input id="importInput" type="file" accept="application/json,.json" hidden>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="summary" aria-label="投递概览">
+      <article class="metric metric-total">
+        <span class="metric-label">全部职位</span>
+        <strong id="totalCount">0</strong>
+        <span class="metric-note">已记录</span>
+      </article>
+      <article class="metric metric-progress">
+        <span class="metric-label">进行中</span>
+        <strong id="progressCount">0</strong>
+        <span class="metric-note">笔试 / 面试</span>
+      </article>
+      <article class="metric metric-offer">
+        <span class="metric-label">已获 Offer</span>
+        <strong id="offerCount">0</strong>
+        <span class="metric-note">继续加油</span>
+      </article>
+      <article class="metric metric-upcoming">
+        <span class="metric-label">近期节点</span>
+        <strong id="upcomingCount">0</strong>
+        <span class="metric-note">未来 7 天</span>
+      </article>
+    </section>
+
+    <section class="calendar-section" aria-labelledby="calendarTitle">
+      <div class="calendar-head">
+        <div>
+          <p class="eyebrow">日程安排</p>
+          <h2 id="calendarTitle">本月日历</h2>
+        </div>
+        <div class="calendar-actions" aria-label="切换月份">
+          <button class="icon-button calendar-arrow" id="prevMonthButton" type="button" aria-label="上个月" title="上个月">‹</button>
+          <button class="button button-quiet button-today" id="todayButton" type="button">回到今天</button>
+          <button class="icon-button calendar-arrow" id="nextMonthButton" type="button" aria-label="下个月" title="下个月">›</button>
+        </div>
+      </div>
+      <div class="calendar-legend" aria-label="日程类型">
+        <span><i class="legend-dot event-fair"></i>招聘会</span>
+        <span><i class="legend-dot event-assessment"></i>笔试 / 面试</span>
+        <span><i class="legend-dot event-deadline"></i>投递截止</span>
+        <span><i class="legend-dot event-other"></i>其他节点</span>
+      </div>
+      <div class="calendar-frame">
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+      <div class="calendar-agenda" id="calendarAgenda"></div>
+    </section>
+
+    <section class="workspace">
+      <div class="workspace-head">
+        <div>
+          <h2>职位记录</h2>
+          <p id="resultSummary">共 0 条记录</p>
+        </div>
+        <div class="filters">
+          <label class="search-field">
+            <span class="sr-only">搜索职位</span>
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="searchInput" type="search" placeholder="搜索公司、职位或地点">
+          </label>
+          <label>
+            <span class="sr-only">按状态筛选</span>
+            <select id="statusFilter">
+              <option value="all">全部状态</option>
+              <option value="关注中">关注中</option>
+              <option value="已投递">已投递</option>
+              <option value="笔试">笔试</option>
+              <option value="一面">一面</option>
+              <option value="二面">二面</option>
+              <option value="终面">终面</option>
+              <option value="Offer">Offer</option>
+              <option value="已拒绝">已拒绝</option>
+              <option value="已结束">已结束</option>
+            </select>
+          </label>
+          <label>
+            <span class="sr-only">排序方式</span>
+            <select id="sortSelect">
+              <option value="updated-desc">最近更新</option>
+              <option value="deadline-asc">截止日期优先</option>
+              <option value="company-asc">公司名称</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>公司与职位</th>
+              <th>状态</th>
+              <th>地点 / 薪资</th>
+              <th>投递日期</th>
+              <th>下一节点</th>
+              <th><span class="sr-only">操作</span></th>
+            </tr>
+          </thead>
+          <tbody id="jobTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" id="emptyState" hidden>
+        <div class="empty-mark" aria-hidden="true">＋</div>
+        <h3 id="emptyTitle">记录你的第一个职位</h3>
+        <p id="emptyDescription">把感兴趣的公司、岗位和投递进度集中放在这里。</p>
+        <button class="button button-primary" id="emptyAddButton" type="button">新增职位</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="jobDialog">
+    <form id="jobForm" method="dialog" novalidate>
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow" id="dialogEyebrow">新记录</p>
+          <h2 id="dialogTitle">新增职位</h2>
+        </div>
+        <button class="icon-button" id="closeDialogButton" type="button" aria-label="关闭">×</button>
+      </div>
+
+      <div class="form-scroll">
+        <input id="jobId" type="hidden">
+        <div class="form-section">
+          <h3>基本信息</h3>
+          <div class="form-grid">
+            <label class="field">
+              <span>公司名称 <b>*</b></span>
+              <input id="company" name="company" required autocomplete="organization" placeholder="例如：字节跳动">
+              <small class="field-error"></small>
+            </label>
+            <label class="field">
+              <span>职位名称 <b>*</b></span>
+              <input id="role" name="role" required placeholder="例如：算法工程师">
+              <small class="field-error"></small>
+            </label>
+            <label class="field">
+              <span>工作地点</span>
+              <input id="location" name="location" placeholder="例如：上海">
+            </label>
+            <label class="field">
+              <span>薪资范围</span>
+              <input id="salary" name="salary" placeholder="例如：25k-40k × 16">
+            </label>
+            <label class="field">
+              <span>投递渠道</span>
+              <select id="channel" name="channel">
+                <option value="官网">官网</option>
+                <option value="内推">内推</option>
+                <option value="Boss 直聘">Boss 直聘</option>
+                <option value="牛客">牛客</option>
+                <option value="猎聘">猎聘</option>
+                <option value="其他">其他</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>职位类型</span>
+              <select id="jobType" name="jobType">
+                <option value="校招">校招</option>
+                <option value="实习转正">实习转正</option>
+                <option value="日常实习">日常实习</option>
+              </select>
+            </label>
+            <label class="field field-wide">
+              <span>职位链接</span>
+              <input id="jobLink" name="jobLink" type="url" placeholder="https://">
+              <small class="field-error"></small>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>招聘会信息</h3>
+          <div class="form-grid">
+            <label class="field field-wide">
+              <span>招聘会名称</span>
+              <input id="fairName" name="fairName" placeholder="例如：上海交通大学秋季双选会">
+            </label>
+            <label class="field">
+              <span>招聘会日期</span>
+              <input id="fairDate" name="fairDate" type="date">
+            </label>
+            <label class="field">
+              <span>招聘会时间</span>
+              <input id="fairTime" name="fairTime" type="time">
+            </label>
+            <label class="field field-wide">
+              <span>招聘会地点</span>
+              <input id="fairVenue" name="fairVenue" placeholder="例如：闵行校区霍英东体育中心">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>投递进度</h3>
+          <div class="form-grid">
+            <label class="field">
+              <span>当前状态</span>
+              <select id="status" name="status">
+                <option value="关注中">关注中</option>
+                <option value="已投递">已投递</option>
+                <option value="笔试">笔试</option>
+                <option value="一面">一面</option>
+                <option value="二面">二面</option>
+                <option value="终面">终面</option>
+                <option value="Offer">Offer</option>
+                <option value="已拒绝">已拒绝</option>
+                <option value="已结束">已结束</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>投递日期</span>
+              <input id="appliedDate" name="appliedDate" type="date">
+            </label>
+            <label class="field">
+              <span>申请截止日期</span>
+              <input id="deadline" name="deadline" type="date">
+            </label>
+            <label class="field">
+              <span>下一节点日期</span>
+              <input id="nextDate" name="nextDate" type="date">
+            </label>
+            <label class="field">
+              <span>节点时间</span>
+              <input id="nextTime" name="nextTime" type="time">
+            </label>
+            <label class="field">
+              <span>节点类型</span>
+              <select id="nodeType" name="nodeType">
+                <option value="其他节点">其他节点</option>
+                <option value="笔试">笔试</option>
+                <option value="一面">一面</option>
+                <option value="二面">二面</option>
+                <option value="终面">终面</option>
+                <option value="体检">体检</option>
+                <option value="签约">签约</option>
+              </select>
+            </label>
+            <label class="field field-wide">
+              <span>下一步事项</span>
+              <input id="nextAction" name="nextAction" placeholder="例如：准备二面、等待笔试通知">
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>详细记录</h3>
+          <div class="form-grid">
+            <label class="field field-wide">
+              <span>职位描述</span>
+              <textarea id="description" name="description" rows="4" placeholder="记录岗位要求、岗位编号等信息"></textarea>
+            </label>
+            <label class="field field-wide">
+              <span>备注</span>
+              <textarea id="notes" name="notes" rows="4" placeholder="记录联系人、面试感受、准备重点等"></textarea>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <span class="save-hint" id="saveHint">保存后自动同步到云端</span>
+        <button class="button button-danger-text" id="deleteButton" type="button" hidden>删除</button>
+        <button class="button button-quiet" id="cancelButton" type="button">取消</button>
+        <button class="button button-primary" type="submit">保存职位</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="auth-dialog" id="authDialog">
+    <form id="authForm" novalidate>
+      <div class="auth-brand">
+        <p class="eyebrow">云端同步</p>
+        <h2>登录秋招投递簿</h2>
+        <p>登录同一账号，在手机和电脑上使用同一份记录。</p>
+      </div>
+      <div class="auth-tabs" role="tablist" aria-label="账号操作">
+        <button class="auth-tab is-active" type="button" data-auth-mode="login">登录</button>
+        <button class="auth-tab" type="button" data-auth-mode="signup">注册</button>
+      </div>
+      <label class="field">
+        <span>邮箱</span>
+        <input id="authEmail" type="email" required autocomplete="email" placeholder="name@example.com">
+      </label>
+      <label class="field">
+        <span>密码</span>
+        <input id="authPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="至少 6 位">
+      </label>
+      <p class="auth-message" id="authMessage" role="status"></p>
+      <button class="button button-primary auth-submit" id="authSubmitButton" type="submit">登录</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
