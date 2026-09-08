@@ -19,6 +19,7 @@ const elements = {
   dialogEyebrow: document.querySelector("#dialogEyebrow"),
   tableWrap: document.querySelector("#tableWrap"),
   tableBody: document.querySelector("#jobTableBody"),
+  jobCardList: document.querySelector("#jobCardList"),
   emptyState: document.querySelector("#emptyState"),
   emptyTitle: document.querySelector("#emptyTitle"),
   emptyDescription: document.querySelector("#emptyDescription"),
@@ -47,6 +48,7 @@ const elements = {
   authPassword: document.querySelector("#authPassword"),
   authMessage: document.querySelector("#authMessage"),
   authSubmitButton: document.querySelector("#authSubmitButton"),
+  mobileAddButton: document.querySelector("#mobileAddButton"),
   toast: document.querySelector("#toast")
 };
 
@@ -420,6 +422,23 @@ function nextNodeText(job) {
   return "—";
 }
 
+function getNextSchedule(job) {
+  if (job.nextDate) {
+    return {
+      label: job.nextAction || job.nodeType || "待办节点",
+      value: `${formatDate(job.nextDate)}${job.nextTime ? ` ${job.nextTime}` : ""}`
+    };
+  }
+  if (job.fairDate) {
+    return {
+      label: job.fairName || "招聘会",
+      value: `${formatDate(job.fairDate)}${job.fairTime ? ` ${job.fairTime}` : ""}`
+    };
+  }
+  if (job.deadline) return { label: "投递截止", value: formatDate(job.deadline) };
+  return null;
+}
+
 function getVisibleJobs() {
   const keyword = elements.searchInput.value.trim().toLocaleLowerCase("zh-CN");
   const status = elements.statusFilter.value;
@@ -477,8 +496,32 @@ function render() {
     </tr>
   `).join("");
 
+  elements.jobCardList.innerHTML = visibleJobs.map((job) => {
+    const schedule = getNextSchedule(job);
+    return `
+      <article class="mobile-job-card">
+        <div class="mobile-job-head">
+          <div>
+            <h3>${escapeHtml(job.company)}</h3>
+            <p>${escapeHtml(job.role)}${job.jobType ? ` · ${escapeHtml(job.jobType)}` : ""}</p>
+          </div>
+          <span class="status-pill" data-status="${escapeHtml(job.status)}">${escapeHtml(job.status)}</span>
+        </div>
+        <div class="mobile-job-meta">
+          <span><small>地点</small>${escapeHtml(job.location || "未填写")}</span>
+          <span><small>薪资</small>${escapeHtml(job.salary || "未填写")}</span>
+        </div>
+        ${schedule ? `<div class="mobile-job-schedule"><span>${escapeHtml(schedule.label)}</span><strong>${escapeHtml(schedule.value)}</strong></div>` : ""}
+        <div class="mobile-job-foot">
+          <span>${escapeHtml(job.channel || "未填写渠道")}${job.appliedDate ? ` · ${escapeHtml(formatDate(job.appliedDate))}投递` : ""}</span>
+          <button class="row-action" type="button" data-edit-id="${escapeHtml(job.id)}">编辑</button>
+        </div>
+      </article>`;
+  }).join("");
+
   const isEmpty = visibleJobs.length === 0;
   elements.tableWrap.hidden = isEmpty;
+  elements.jobCardList.hidden = isEmpty;
   elements.emptyState.hidden = !isEmpty;
   if (isEmpty) {
     elements.emptyTitle.textContent = hasFilter ? "没有匹配的职位" : "记录你的第一个职位";
@@ -659,6 +702,7 @@ function showToast(message) {
 
 elements.addButton.addEventListener("click", () => currentUser ? openDialog() : openAuthDialog());
 elements.emptyAddButton.addEventListener("click", () => currentUser ? openDialog() : openAuthDialog());
+elements.mobileAddButton.addEventListener("click", () => currentUser ? openDialog() : openAuthDialog());
 elements.closeDialogButton.addEventListener("click", closeDialog);
 elements.cancelButton.addEventListener("click", closeDialog);
 elements.deleteButton.addEventListener("click", deleteCurrentJob);
@@ -706,6 +750,18 @@ elements.todayButton.addEventListener("click", () => {
 elements.tableBody.addEventListener("click", (event) => {
   const button = event.target.closest("[data-edit-id]");
   if (button) openDialog(button.dataset.editId);
+});
+elements.jobCardList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-edit-id]");
+  if (button) openDialog(button.dataset.editId);
+});
+[...document.querySelectorAll("[data-mobile-view]")].forEach((button) => {
+  button.addEventListener("click", () => {
+    document.body.dataset.mobileView = button.dataset.mobileView;
+    document.querySelectorAll("[data-mobile-view]").forEach((item) => {
+      item.classList.toggle("is-active", item === button);
+    });
+  });
 });
 [elements.calendarGrid, elements.calendarAgenda].forEach((container) => container.addEventListener("click", (event) => {
   const button = event.target.closest("[data-edit-id]");

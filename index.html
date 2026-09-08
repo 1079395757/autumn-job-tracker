@@ -7,7 +7,7 @@
   <title>秋招投递簿</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-mobile-view="jobs">
   <header class="app-header">
     <div class="header-inner">
       <div>
@@ -16,8 +16,13 @@
       </div>
       <div class="header-actions">
         <span class="cloud-status" id="cloudStatus">尚未登录</span>
-        <button class="button button-quiet" id="importButton" type="button">导入备份</button>
-        <button class="button button-quiet" id="exportButton" type="button">导出备份</button>
+        <details class="backup-menu" id="backupMenu">
+          <summary class="button button-quiet">备份</summary>
+          <div class="backup-popover">
+            <button id="importButton" type="button">导入备份</button>
+            <button id="exportButton" type="button">导出备份</button>
+          </div>
+        </details>
         <button class="button button-quiet" id="loginButton" type="button">登录</button>
         <div class="account-menu" id="accountMenu" hidden>
           <span id="userEmail"></span>
@@ -52,6 +57,11 @@
         <span class="metric-note">未来 7 天</span>
       </article>
     </section>
+
+    <nav class="mobile-view-tabs" aria-label="手机端内容视图">
+      <button type="button" data-mobile-view="jobs" class="is-active">职位</button>
+      <button type="button" data-mobile-view="calendar">日程</button>
+    </nav>
 
     <section class="calendar-section" aria-labelledby="calendarTitle">
       <div class="calendar-head">
@@ -133,6 +143,8 @@
           <tbody id="jobTableBody"></tbody>
         </table>
       </div>
+
+      <div class="job-card-list" id="jobCardList"></div>
 
       <div class="empty-state" id="emptyState" hidden>
         <div class="empty-mark" aria-hidden="true">＋</div>
@@ -300,6 +312,8 @@
       </div>
     </form>
   </dialog>
+
+  <button class="mobile-add-button" id="mobileAddButton" type="button" aria-label="新增职位" title="新增职位">＋</button>
 
   <dialog class="auth-dialog" id="authDialog">
     <form id="authForm" novalidate>
